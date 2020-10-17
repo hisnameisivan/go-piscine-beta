@@ -50,20 +50,18 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		inputLine := scanner.Text()
+		if inputLine == "" {
+			gracefulExit("Empty input line", "Valid values in [-100000;100000]")
+		}
 		num, err := strconv.Atoi(inputLine)
 		if err != nil {
-			p("Error parsing input line as int:", inputLine)
-			os.Exit(1)
+			gracefulExit("Error parsing input line as int: "+inputLine, "Valid values in [-100000;100000]")
 		}
 		if num > 100000 {
-			p("The number is too big:", inputLine)
-			p("Valid values in [-100000;100000]")
-			os.Exit(1)
+			gracefulExit("The number is too big: "+inputLine, "Valid values in [-100000;100000]")
 		}
 		if num < -100000 {
-			p("The number is too small:", inputLine)
-			p("Valid values in [-100000;100000]")
-			os.Exit(1)
+			gracefulExit("The number is too small: "+inputLine, "Valid values in [-100000;100000]")
 		}
 		numbers = append(numbers, num)
 		if _, ok := frequency[num]; !ok {
@@ -75,12 +73,12 @@ func main() {
 		count++
 	}
 	if err := scanner.Err(); err != nil {
-		p(err)
-		os.Exit(1)
+		gracefulExit(err.Error(), "")
+
 	}
 	if count < 1 {
-		p("Too few numbers")
-		os.Exit(1)
+		gracefulExit("Too few numbers", "")
+
 	}
 	sort.Ints(numbers)
 	mean = float64(sum) / float64(count)
@@ -99,6 +97,14 @@ func main() {
 	if isPrintSD {
 		pf("SD: %.2f\n", standardDeviation)
 	}
+}
+
+func gracefulExit(msg string, additions string) {
+	p(msg)
+	if additions != "" {
+		p(additions)
+	}
+	os.Exit(1)
 }
 
 func calcMedian(numbers []int, sum int, count int) float64 {
