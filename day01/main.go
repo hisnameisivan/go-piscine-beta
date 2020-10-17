@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"math"
 	"os"
@@ -10,26 +11,58 @@ import (
 )
 
 var p = fmt.Println
+var pf = fmt.Printf
+
+var (
+	isPrintMean   bool
+	isPrintMedian bool
+	isPrintMode   bool
+	isPrintSD     bool
+)
+
+func init() {
+	flag.BoolVar(&isPrintMean, "mean", false, "Print mean value")
+	flag.BoolVar(&isPrintMedian, "median", false, "Print median value")
+	flag.BoolVar(&isPrintMode, "mode", false, "Print mode value")
+	flag.BoolVar(&isPrintSD, "sd", false, "Print standard deviation value")
+	flag.Parse()
+	if !isPrintMean && !isPrintMedian && !isPrintMode && !isPrintSD {
+		isPrintMean = true
+		isPrintMedian = true
+		isPrintMode = true
+		isPrintSD = true
+	}
+}
 
 func main() {
 	var (
-		numbers           []float64
-		frequency         map[float64]int
-		sum               float64
+		numbers           []int
+		frequency         map[int]int
+		sum               int
 		count             int
 		mean              float64
 		median            float64
-		mode              float64
+		mode              int
 		standardDeviation float64
 	)
 
-	frequency = make(map[float64]int)
+	frequency = make(map[int]int)
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		inputLine := scanner.Text()
-		num, err := strconv.ParseFloat(inputLine, 64)
+		num, err := strconv.Atoi(inputLine)
 		if err != nil {
-			p(err)
+			p("Error parsing input line as int:", inputLine)
+			os.Exit(1)
+		}
+		if num > 100000 {
+			p("The number is too big:", inputLine)
+			p("Valid values in [-100000;100000]")
+			os.Exit(1)
+		}
+		if num < -100000 {
+			p("The number is too small:", inputLine)
+			p("Valid values in [-100000;100000]")
 			os.Exit(1)
 		}
 		numbers = append(numbers, num)
@@ -49,38 +82,47 @@ func main() {
 		p("Too few numbers")
 		os.Exit(1)
 	}
-	sort.Float64s(numbers)
-	mean = sum / float64(count)
+	sort.Ints(numbers)
+	mean = float64(sum) / float64(count)
 	median = calcMedian(numbers, sum, count)
 	mode = calcMode(frequency)
 	standardDeviation = calcStandardDeviation(numbers, count, mean)
-	p(numbers)
-	p(sum)
-	fmt.Printf("Mean: %.2f\nMedian: %.2f\nMode: %.2f\nSD: %.2f\n", mean, median, mode, standardDeviation)
+	if isPrintMean {
+		pf("Mean: %.2f\n", mean)
+	}
+	if isPrintMedian {
+		pf("Median: %.2f\n", median)
+	}
+	if isPrintMode {
+		pf("Mode: %d\n", mode)
+	}
+	if isPrintSD {
+		pf("SD: %.2f\n", standardDeviation)
+	}
 }
 
-func calcMedian(numbers []float64, sum float64, count int) float64 {
+func calcMedian(numbers []int, sum int, count int) float64 {
 	var (
 		index int
 	)
 
 	if count%2 == 0 {
 		index = count/2 - 1
-		return (numbers[index] + numbers[index+1]) / 2
+		return float64(numbers[index]+numbers[index+1]) / 2
 	}
 	index = (count - 1) / 2
-	return numbers[index]
+	return float64(numbers[index])
 }
 
-func calcMode(frequency map[float64]int) float64 {
+func calcMode(frequency map[int]int) int {
 	var (
-		mode    float64
+		mode    int
 		maxFreq int
 	)
 
 	for num, freq := range frequency {
 		if maxFreq < freq {
-			freq = maxFreq
+			maxFreq = freq
 			mode = num
 		} else if maxFreq == freq {
 			if num < mode {
@@ -91,15 +133,15 @@ func calcMode(frequency map[float64]int) float64 {
 	return mode
 }
 
-func calcStandardDeviation(numbers []float64, count int, mean float64) float64 {
+func calcStandardDeviation(numbers []int, count int, mean float64) float64 {
 	var (
 		variance float64
 		tempSum  float64
 	)
 
 	for _, num := range numbers {
-		tempSum += math.Pow((num - mean), 2)
+		tempSum += math.Pow((float64(num) - mean), 2)
 	}
-	variance = tempSum / float64(count)
+	variance = float64(tempSum) / float64(count)
 	return math.Sqrt(variance)
 }
