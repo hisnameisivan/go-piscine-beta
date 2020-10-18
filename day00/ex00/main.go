@@ -42,7 +42,7 @@ func main() {
 		count             int
 		mean              float64
 		median            float64
-		mode              int
+		mode              float64
 		standardDeviation float64
 	)
 
@@ -92,7 +92,7 @@ func main() {
 		pf("Median: %.2f\n", median)
 	}
 	if isPrintMode {
-		pf("Mode: %d\n", mode)
+		pf("Mode: %.2f\n", mode)
 	}
 	if isPrintSD {
 		pf("SD: %.2f\n", standardDeviation)
@@ -120,19 +120,19 @@ func calcMedian(numbers []int, sum int, count int) float64 {
 	return float64(numbers[index])
 }
 
-func calcMode(frequency map[int]int) int {
+func calcMode(frequency map[int]int) float64 {
 	var (
-		mode    int
+		mode    float64
 		maxFreq int
 	)
 
 	for num, freq := range frequency {
 		if maxFreq < freq {
 			maxFreq = freq
-			mode = num
+			mode = float64(num)
 		} else if maxFreq == freq {
-			if num < mode {
-				mode = num
+			if float64(num) < mode {
+				mode = float64(num)
 			}
 		}
 	}
