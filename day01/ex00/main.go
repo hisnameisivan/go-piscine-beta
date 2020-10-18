@@ -3,125 +3,69 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"strings"
 )
 
 var p = fmt.Println
 
+var (
+	filename string
+)
+
+func init() {
+	flag.StringVar(&filename, "f", "", "Filename")
+	flag.Parse()
+}
+
 func main() {
 	var (
-		// xmldoc recipes
-		// xmldoc XMLDoc
-
+		xmldoc  XMLDoc
 		jsondoc JSONDoc
+		out     []byte
 	)
 
-	// xmlData, err := ioutil.ReadFile("res.xml")
-	// if err != nil {
-	// 	p(err)
-	// }
-
-	// p(string(xmlData))
-	// err = xml.Unmarshal(xmlData, &xmldoc)
-	// if err != nil {
-	// 	p(err)
-	// }
-	// p(xmldoc)
-
-	// data, err := xml.Marshal(xmldoc)
-	// if err != nil {
-	// 	p(err)
-	// }
-	// p(string(data))
-
-	/*
-	** json
-	 */
-
-	jsonData, err := ioutil.ReadFile("res.json")
-	if err != nil {
-		p(err)
+	if filename == "" {
+		gracefulExit("No input file")
 	}
 
-	p(string(jsonData))
-	err = json.Unmarshal(jsonData, &jsondoc)
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
-		p(err)
+		gracefulExit(err.Error())
 	}
-	p(jsondoc)
 
-	data, err := json.Marshal(jsondoc)
-	if err != nil {
-		p(err)
+	if strings.HasSuffix(filename, ".xml") {
+		err = xmldoc.Read(data)
+		if err != nil {
+			gracefulExit(err.Error())
+		}
+		out, err = xmldoc.Write()
+		if err != nil {
+			gracefulExit(err.Error())
+		}
+		p(string(out))
+	} else if strings.HasSuffix(filename, ".json") {
+		err = jsondoc.Read(data)
+		if err != nil {
+			gracefulExit(err.Error())
+		}
+		out, err = jsondoc.Write()
+		if err != nil {
+			gracefulExit(err.Error())
+		}
+		p(string(out))
+	} else {
+		gracefulExit("Invalid file format")
 	}
-	p(string(data))
 }
 
-type BDReader interface {
-	Read(p []byte) (n int, err error)
+type DBReader interface {
+	Read(data []byte) error
+	Write() ([]byte, error)
 }
-
-// type recipes struct {
-// 	Cakes []struct {
-// 		Name        string `xml:"name"`
-// 		Stovetime   string `xml:"stovetime"`
-// 		Ingredients struct {
-// 			Items []struct {
-// 				Itemname  string `xml:"itemname"`
-// 				Itemcount string `xml:"itemcount"`
-// 				Itemunit  string `xml:"itemunit"`
-// 			} `xml:"item"`
-// 		} `xml:"ingredients"`
-// 	} `xml:"cake"`
-// }
-
-// type XMLDoc struct {
-// 	XMLName xml.Name `xml:"recipes"`
-// 	Cakes   []struct {
-// 		Name        string `xml:"name"`
-// 		Stovetime   string `xml:"stovetime"`
-// 		Ingredients []struct {
-// 			// Items []struct {
-// 			Itemname  string `xml:"itemname"`
-// 			Itemcount string `xml:"itemcount"`
-// 			Itemunit  string `xml:"itemunit"`
-// 			// } `xml:"item"`
-// 		} `xml:"ingredients>item"`
-// 	} `xml:"cake"`
-// }
-
-// type JSONDoc struct {
-// 	// JSONName json.Name `json:"recipes"`
-// 	Cakes []struct {
-// 		Name        string `json:"name"`
-// 		Stovetime   string `json:"time"`
-// 		Ingredients []struct {
-// 			Itemname  string `json:"ingredient_name"`
-// 			Itemcount string `json:"ingredient_count"`
-// 			Itemunit  string `json:"ingredient_unit"`
-// 		} `json:"ingredients"`
-// 	} `json:"cake"`
-// }
-
-// type XMLDoc struct {
-// 	XMLName xml.Name `xml:"recipes"`
-// 	Cakes   []Cake   `xml:"cake"`
-// }
-
-// type JSONDoc struct {
-// 	Cakes []Cake `json:"cake"`
-// }
-
-// type Cake struct {
-// 	Name        string `xml:"name" json:"name"`
-// 	Time        string `xml:"stovetime" json:"time"`
-// 	Ingredients []struct {
-// 		Name  string `xml:"itemname" json:"ingredient_name"`
-// 		Count string `xml:"itemcount" json:"ingredient_count"`
-// 		Unit  string `xml:"itemunit" json:"ingredient_unit,omitempty"`
-// 	} `xml:"ingredients>item" json:"ingredients"`
-// }
 
 type recipes struct {
 	XMLName xml.Name `xml:"recipes" json:"-"`
@@ -139,6 +83,27 @@ type recipes struct {
 type XMLDoc recipes
 type JSONDoc recipes
 
-// func (doc *XMLDoc) Read(p byte) (n int, err error) {
+func (doc *XMLDoc) Read(data []byte) error {
+	err := xml.Unmarshal(data, doc)
+	return err
+}
 
-// }
+func (doc *XMLDoc) Write() ([]byte, error) {
+	out, err := json.MarshalIndent(*doc, "", "    ")
+	return out, err
+}
+
+func (doc *JSONDoc) Read(data []byte) error {
+	err := json.Unmarshal(data, doc)
+	return err
+}
+
+func (doc *JSONDoc) Write() ([]byte, error) {
+	out, err := xml.MarshalIndent(*doc, "", "    ")
+	return out, err
+}
+
+func gracefulExit(msg string) {
+	p(msg)
+	os.Exit(1)
+}
