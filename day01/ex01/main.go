@@ -26,28 +26,26 @@ func init() {
 
 func main() {
 	var (
-		xmldoc  XMLDoc
-		jsondoc JSONDoc
-		oldData []byte
-		newData []byte
-		err     error
-		cakes   map[string]bool
+		xmldoc   XMLDoc
+		jsondoc  JSONDoc
+		oldData  []byte
+		newData  []byte
+		err      error
+		oldCakes map[string]bool
+		newCakes map[string]bool
 	)
 
 	if originalFilename == "" && stolenFilename == "" {
 		gracefulExit("Missing database names")
-		// } else if originalFilename == "" {
-		// 	gracefulExit("Missing original database name")
-		// } else if stolenFilename == "" {
-		// 	gracefulExit("Missing stolen database name")
+	} else if originalFilename == "" {
+		gracefulExit("Missing original database name")
+	} else if stolenFilename == "" {
+		gracefulExit("Missing stolen database name")
 	} else if !strings.HasSuffix(originalFilename, ".xml") {
 		gracefulExit("Incorrect format of the original database")
 	} else if !strings.HasSuffix(stolenFilename, ".json") {
 		gracefulExit("Incorrect format of the stolen database")
 	}
-
-	p(originalFilename)
-	p(stolenFilename)
 
 	oldData, err = ioutil.ReadFile(originalFilename)
 	if err != nil {
@@ -67,18 +65,22 @@ func main() {
 		gracefulExit(err.Error())
 	}
 
-	cakes = make(map[string]bool)
+	oldCakes = make(map[string]bool)
+	newCakes = make(map[string]bool)
 	for _, oldCake := range xmldoc.Cakes {
-		cakes[oldCake.Name] = true
+		oldCakes[oldCake.Name] = true
 		for _, newCake := range jsondoc.Cakes {
+			newCakes[newCake.Name] = true
 			if oldCake.Name == newCake.Name {
 				if oldCake.Time != newCake.Time {
 					pf("CHANGED cooking time for cake \"%s\" - \"%s\" instead of \"%s\"\n", oldCake.Name, newCake.Time, oldCake.Time)
 				}
-				ingredients := make(map[string]bool)
+				newIngredients := make(map[string]bool)
+				oldIngredients := make(map[string]bool)
 				for _, oldIngredient := range oldCake.Ingredients {
-					ingredients[oldIngredient.Name] = true
+					oldIngredients[oldIngredient.Name] = true
 					for _, newIngredient := range newCake.Ingredients {
+						newIngredients[newIngredient.Name] = true
 						if oldIngredient.Name == newIngredient.Name {
 							if oldIngredient.Unit == "" && newIngredient.Unit != "" {
 								pf("ADDED unit \"%s\" for ingredient \"%s\" for cake \"%s\" - \"%s\" instead of \"%s\"\n", newIngredient.Unit, oldIngredient.Name, oldCake.Name)
@@ -92,8 +94,24 @@ func main() {
 							}
 						}
 					}
+					if _, ok := newIngredients[oldIngredient.Name]; !ok {
+						pf("REMOVED ingredient \"%s\" for cake  \"%s\"\n", oldIngredient.Name, oldCake.Name)
+					}
+				}
+				for _, newIngredient := range newCake.Ingredients {
+					if _, ok := oldIngredients[newIngredient.Name]; !ok {
+						pf("ADDED ingredient \"%s\" for cake  \"%s\"\n", newIngredient.Name, oldCake.Name)
+					}
 				}
 			}
+		}
+		if _, ok := newCakes[oldCake.Name]; !ok {
+			pf("REMOVED cake \"%s\"\n", oldCake.Name)
+		}
+	}
+	for _, newCake := range jsondoc.Cakes {
+		if _, ok := oldCakes[newCake.Name]; !ok {
+			pf("ADDED cake \"%s\"\n", newCake.Name)
 		}
 	}
 }
