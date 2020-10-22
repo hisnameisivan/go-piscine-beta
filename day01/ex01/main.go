@@ -83,9 +83,9 @@ func main() {
 						newIngredients[newIngredient.Name] = true
 						if oldIngredient.Name == newIngredient.Name {
 							if oldIngredient.Unit == "" && newIngredient.Unit != "" {
-								pf("ADDED unit \"%s\" for ingredient \"%s\" for cake \"%s\" - \"%s\" instead of \"%s\"\n", newIngredient.Unit, oldIngredient.Name, oldCake.Name)
+								pf("ADDED unit \"%s\" for ingredient \"%s\" for cake \"%s\"\n", newIngredient.Unit, oldIngredient.Name, oldCake.Name)
 							} else if oldIngredient.Unit != "" && newIngredient.Unit == "" {
-								pf("REMOVED unit \"%s\" for ingredient \"%s\" for cake \"%s\" - \"%s\" instead of \"%s\"\n", oldIngredient.Unit, oldIngredient.Name, oldCake.Name)
+								pf("REMOVED unit \"%s\" for ingredient \"%s\" for cake \"%s\"\n", oldIngredient.Unit, oldIngredient.Name, oldCake.Name)
 							} else if oldIngredient.Unit != newIngredient.Unit {
 								pf("CHANGED unit for ingredient \"%s\" for cake \"%s\" - \"%s\" instead of \"%s\"\n", oldIngredient.Name, oldCake.Name, newIngredient.Unit, oldIngredient.Unit)
 							}
